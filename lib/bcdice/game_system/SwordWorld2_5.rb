@@ -73,9 +73,6 @@ module BCDice
         ・超越判定用に2d6ロールに 2D6@10 書式でクリティカル値付与が可能に。
         　例）2D6@10　2D6@10+11>=30
 
-        ・ビブリオマンサーの応急行使判定用に2d6ロールに 2D6F7 書式で特殊失敗値付与が可能に。
-        　例) 2D6F7　2D6F5+10>=15
-
         ・成長　(Gr)
         　末尾に数字を付加することで、複数回の成長をまとめて行えます。
         　例）Gr3
@@ -89,6 +86,9 @@ module BCDice
         ・ドルイドの物理魔法用表　(Dru[2-6の値,7-9の値,10-12の値])
         　例）Dru[0,3,6]+10-3
 
+        ・ビブリオマンサーの応急行使判定用　(Bib[特殊失敗値])
+        　例）Bib[6]+8　Bib[9]+10-1>=17
+
         ・アビスカース表　(ABT)
         　アビスカース表を出すことができます。
 
@@ -96,7 +96,7 @@ module BCDice
         　追加アビスカース表を出すことができます。
       INFO_MESSAGE_TEXT
 
-      register_prefix('H?K', 'OHK', 'Gr', '2D6?@\d+', '2D6?F\d+', 'FT', 'TT', 'Dru', 'ABT', 'AABT')
+      register_prefix('H?K', 'OHK', 'Gr', '2D6?@\d+', 'FT', 'TT', 'Dru', 'Bib', 'ABT', 'AABT')
 
       def eval_game_system_specific_command(command)
         case command
@@ -111,10 +111,10 @@ module BCDice
 
           druid_dice(cmd, power_list)
 
-        when /^2D6?F\d+/i
-          biblio_parser = Command::Parser.new(/2D6?F/i, round_type: BCDice::RoundType::CEIL).enable_suffix_number
+        when /^bib\[(\d+)\]/i
+          failure_num = Regexp.last_match(1).to_i
+          biblio_parser = Command::Parser.new(/^bib\[\d+\]/i, round_type: BCDice::RoundType::CEIL)
           cmd = biblio_parser.parse(command)
-          failure_num = cmd.suffix_number
 
           if !cmd || !failure_num
             return nil
@@ -176,7 +176,7 @@ module BCDice
         result ||= Result.new
 
         sequence = [
-          "(2D6F#{failure_num}#{Format.modifier(command.modify_number)}#{command.cmp_op}#{command.target_number})",
+          "(#{command.command.capitalize}#{Format.modifier(command.modify_number)}#{command.cmp_op}#{command.target_number})",
           "#{dice_total}[#{dice_list.join(',')}]#{Format.modifier(command.modify_number)}",
           total,
           result.text
